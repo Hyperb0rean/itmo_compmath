@@ -1,5 +1,6 @@
 use std::io;
 use std::io::{BufRead, stdout};
+use std::mem::swap;
 
 
 fn main() -> io::Result<()> {
@@ -42,31 +43,55 @@ fn main() -> io::Result<()> {
     let e: f64 = buffer.trim().parse().expect("Input is not Number");
 
 
-    println!("Enter max iterations:");
-    buffer = String::new();
-    handle.read_line(&mut buffer)?;
-    let m: usize = buffer.trim().parse().expect("Input is not Number");
-
     let mut v_x = vec![0 as f64; n];
 
     //Bringing matrix to certain form
+    let mut flag: bool = false;
+    for i in 0..n {
+        let mut  sum: f64 = 0.0;
+        let mut maximum: f64 = 0.0;
+        let mut max_j: usize = 0;
+        for j in 0..n {
+            sum+= a[i][j].abs();
+            maximum = if maximum < a[i][j].abs() {max_j = j; a[i][j].abs()} else {maximum};
+        }
+        sum-=maximum;
+        if maximum < sum{
+            println!("Diverges!!!");
+            return Ok(());
+        }
+        else if  maximum>sum{
+            flag=true;
+        }
 
-    
+        a.swap(i,max_j);
+        b.swap(i,max_j);
+    }
+    if !flag{
+        println!("Diverges!!");
+        return Ok(());
+    }
+
+    println!("Your matrix after diagonalizing:");
+
+    for m in &a {
+        println!("{:?}", &m);
+    }
 
 
     // Calculation
-    for k in 1..m {
+    loop {
         let mut delta: f64 = 0.0;
-        for i in 0..n {
+        for i in 1..=n {
             let mut s: f64 = 0.0;
-            for j in 0..(i-1) {
-                s += a[i][j] * v_x[j];
+            for j in 1..i {
+                s += a[i-1][j-1] * v_x[j-1];
             }
-            for j in i..n {
-                s += a[i][j] * v_x[j];
+            for j in (i+1)..=n {
+                s += a[i-1][j-1] * v_x[j-1];
             }
-            let x: f64 = (b[i] - s) / a[i][i];
-            let d: f64 = (x - v_x[i]).abs();
+            let x: f64 = (b[i-1] - s) / a[i-1][i-1];
+            let d: f64 = (x - v_x[i-1]).abs();
             if d > delta {
                 delta = d;
             }
