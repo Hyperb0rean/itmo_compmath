@@ -1,51 +1,99 @@
 use std::io;
-use std::io::{BufRead, stdout};
-use std::mem::swap;
+use std::io::{BufRead, Error};
+use std::fs::File;
+use std::io::ErrorKind::Other;
 
 
-fn main() -> io::Result<()> {
+fn input(a: &mut Vec<Vec<f64>>, n: &mut usize, b: &mut Vec<f64>, e: &mut f64) -> io::Result<()>{
     let stdin = io::stdin();
     let mut handle = stdin.lock();
 
+    println!("Choose mode: (\"console\" for console input, \"file\" for file input)");
 
-    //Input variables
-    println!("Enter matrix dim:");
     let mut buffer = String::new();
     handle.read_line(&mut buffer)?;
-    let n: usize = buffer.trim().parse().expect("Input is not Number");
 
+    if buffer.trim() == "console"{
 
-    let mut a = vec![vec![0 as f64; n]; n];
-    println!("Enter matrix coefficients");
-    for j in 0..n {
+        println!("Enter matrix dimension:");
         buffer = String::new();
         handle.read_line(&mut buffer)?;
-        a[j] = buffer.trim().split(" ").map(|n| n.parse().expect("Input is not a Number")).collect();
-        if (&a)[j].len() > n { panic!("Line {} is more than dim", j) }
+        *n = buffer.trim().parse().expect("Input is not Number");
+        if *n<1 || *n>100 {panic!("Matrix dimension either impossible or too big");}
+
+        *a = vec![vec![0 as f64; *n]; *n];
+        println!("Enter matrix coefficients");
+        for j in 0..*n {
+            buffer = String::new();
+            handle.read_line(&mut buffer)?;
+            a[j] = buffer.trim().split(" ").map(|n| n.parse().expect("Input is not a Number")).collect();
+            if (&*a)[j].len() > *n { panic!("Line {} is more than dim", j) }
+        }
+
+
+        println!("Your matrix:");
+        for m in &*a {
+            println!("{:?}", &m);
+        }
+
+        *b = vec![0 as f64; *n];
+        println!("Enter vector of free coefficients");
+        buffer = String::new();
+        handle.read_line(&mut buffer)?;
+        *b = buffer.trim().split(" ").map(|n| n.parse().expect("Input is not a Number")).collect();
+        if (*b).len() > *n { panic!("Vector is more than dimension") }
+
+        println!("Enter possible error:");
+        buffer = String::new();
+        handle.read_line(&mut buffer)?;
+        *e = buffer.trim().parse().expect("Input is not Number");
+        if *e <= 0.0 { panic!("Error should be bigger than 0");}
+        Ok(())
+    }
+    else if  buffer.trim() == "file"{
+        println!("Enter file path:");
+        buffer = String::new();
+        handle.read_line(&mut buffer)?;
+        let file = File::open(buffer.trim()).unwrap();
+        let mut lines  =io::BufReader::new(file).lines();
+        let mut line = lines.next().unwrap()?;
+        *n = line.trim().parse().expect("Input is not Number");
+        if *n<1 || *n>100 {panic!("Matrix dimension either impossible or too big");}
+
+        *a = vec![vec![0 as f64; *n]; *n];
+        for j in 0..*n {
+            line = lines.next().unwrap()?;
+            a[j] = line.trim().split(" ").map(|n| n.parse().expect("Input is not a Number")).collect();
+            if (&*a)[j].len() > *n { panic!("Line {} is more than dim", j) }
+        }
+
+        *b = vec![0 as f64; *n];
+        line = lines.next().unwrap()?;
+        *b = line.trim().split(" ").map(|n| n.parse().expect("Input is not a Number")).collect();
+        if (*b).len() > *n { panic!("Vector is more than dimension") }
+
+        line = lines.next().unwrap()?;
+        *e = line.trim().parse().expect("Input is not Number");
+        if *e <= 0.0 { panic!("Error should be bigger than 0");}
+        Ok(())
+    }
+    else {
+        Err(Error::new(Other,"Unrecognisable input"))
     }
 
+}
 
-    println!("Your matrix:");
-    for m in &a {
-        println!("{:?}", &m);
-    }
+fn main() {
 
-    let mut b = vec![0 as f64; n];
-    println!("Enter vector of free coefficients");
-    buffer = String::new();
-    handle.read_line(&mut buffer)?;
-    b = buffer.trim().split(" ").map(|n| n.parse().expect("Input is not a Number")).collect();
-    if b.len() > n { panic!("Vector is more than dim") }
-
-    println!("Enter possible error:");
-    buffer = String::new();
-    handle.read_line(&mut buffer)?;
-    let e: f64 = buffer.trim().parse().expect("Input is not Number");
-
+    //Input
+    let mut a:Vec<Vec<f64>> = vec![];
+    let mut n:usize = 0;
+    let mut b:Vec<f64> = vec![];
+    let mut e:f64 = 0.0;
+    match input(&mut a,&mut n,&mut b,&mut e) { Ok(()) => (),Err(e) => panic!("{}",e.to_string()) };
 
     let mut v_x = vec![0 as f64; n];
 
-    //Bringing matrix to certain form
     let mut flag: bool = false;
     for i in 0..n {
         let mut  sum: f64 = 0.0;
@@ -57,8 +105,7 @@ fn main() -> io::Result<()> {
         }
         sum-=maximum;
         if maximum < sum{
-            println!("Diverges!!!");
-            return Ok(());
+            eprintln!("Diverges!!!");
         }
         else if  maximum>sum{
             flag=true;
@@ -68,8 +115,7 @@ fn main() -> io::Result<()> {
         b.swap(i,max_j);
     }
     if !flag{
-        println!("Diverges!!");
-        return Ok(());
+        eprintln!("Diverges!!");
     }
 
     println!("Your matrix after diagonalizing:");
@@ -100,10 +146,7 @@ fn main() -> io::Result<()> {
         if delta < e {
             println!("Your answer:");
             println!("{:?}", &v_x);
-            return Ok(());
+            break;
         }
     }
-    println!("Diverges!");
-
-    Ok(())
 }
