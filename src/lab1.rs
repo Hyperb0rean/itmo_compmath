@@ -4,7 +4,7 @@ use std::fs::File;
 use std::io::ErrorKind::Other;
 
 
-fn input(a: &mut Vec<Vec<f64>>, n: &mut usize, b: &mut Vec<f64>, e: &mut f64) -> io::Result<()>{
+fn input(n: &mut usize, a: &mut Vec<Vec<f64>>, b: &mut Vec<f64>, e: &mut f64) -> io::Result<()>{
     let stdin = io::stdin();
     let mut handle = stdin.lock();
 
@@ -83,60 +83,51 @@ fn input(a: &mut Vec<Vec<f64>>, n: &mut usize, b: &mut Vec<f64>, e: &mut f64) ->
 
 }
 
-fn main() {
-
-    //Input
-    let mut a:Vec<Vec<f64>> = vec![];
-    let mut n:usize = 0;
-    let mut b:Vec<f64> = vec![];
-    let mut e:f64 = 0.0;
-    match input(&mut a,&mut n,&mut b,&mut e) { Ok(()) => (),Err(e) => panic!("{}",e.to_string()) };
-
-    let mut v_x = vec![0 as f64; n];
-
+fn diagonal_domination(n: usize,a: &mut Vec<Vec<f64>>, b: &mut Vec<f64>){
     let mut flag: bool = false;
     for i in 0..n {
         let mut  sum: f64 = 0.0;
         let mut maximum: f64 = 0.0;
         let mut max_j: usize = 0;
         for j in 0..n {
-            sum+= a[i][j].abs();
-            maximum = if maximum < a[i][j].abs() {max_j = j; a[i][j].abs()} else {maximum};
+            sum+= (*a)[i][j].abs();
+            maximum = if maximum < (*a)[i][j].abs() {max_j = j; (*a)[i][j].abs()} else {maximum};
         }
         sum-=maximum;
         if maximum < sum{
-            eprintln!("Diverges!!!");
+            panic!("Diverges!!!");
         }
         else if  maximum>sum{
             flag=true;
         }
 
-        a.swap(i,max_j);
-        b.swap(i,max_j);
+        (*a).swap(i,max_j);
+        (*b).swap(i,max_j);
     }
     if !flag{
-        eprintln!("Diverges!!");
+        panic!("Diverges!!");
     }
+
 
     println!("Your matrix after diagonalizing:");
-
-    for m in &a {
+    for m in &*a {
         println!("{:?}", &m);
     }
+}
 
-
-    // Calculation
+fn calculation(n: usize,a: &mut Vec<Vec<f64>>, b: &mut Vec<f64>, e: f64){
+    let mut v_x = vec![0 as f64; n];
     loop {
         let mut delta: f64 = 0.0;
         for i in 1..=n {
             let mut s: f64 = 0.0;
             for j in 1..i {
-                s += a[i-1][j-1] * v_x[j-1];
+                s += (*a)[i-1][j-1] * v_x[j-1];
             }
             for j in (i+1)..=n {
-                s += a[i-1][j-1] * v_x[j-1];
+                s += (*a)[i-1][j-1] * v_x[j-1];
             }
-            let x: f64 = (b[i-1] - s) / a[i-1][i-1];
+            let x: f64 = ((*b)[i-1] - s) / (*a)[i-1][i-1];
             let d: f64 = (x - v_x[i-1]).abs();
             if d > delta {
                 delta = d;
@@ -149,4 +140,18 @@ fn main() {
             break;
         }
     }
+}
+
+fn main() {
+
+    //Input
+    let mut a:Vec<Vec<f64>> = vec![];
+    let mut n:usize = 0;
+    let mut b:Vec<f64> = vec![];
+    let mut e:f64 = 0.0;
+    match input(&mut n,&mut a,&mut b,&mut e) { Ok(()) => (),Err(e) => panic!("{}",e.to_string()) };
+
+    diagonal_domination(n,&mut a,&mut b);
+
+    calculation(n,&mut a,&mut b,e);
 }
