@@ -144,7 +144,6 @@ fn calculation(n: usize,a: &mut Vec<Vec<f64>>, b: &mut Vec<f64>, e: f64){
 
 fn main() {
 
-    //Input
     let mut a:Vec<Vec<f64>> = vec![];
     let mut n:usize = 0;
     let mut b:Vec<f64> = vec![];
