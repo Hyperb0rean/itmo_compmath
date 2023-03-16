@@ -1,3 +1,4 @@
+
 use std::io;
 use std::io::{BufRead, Error};
 use std::fs::File;
@@ -117,7 +118,9 @@ fn diagonal_domination(n: usize,a: &mut Vec<Vec<f64>>, b: &mut Vec<f64>){
 
 fn calculation(n: usize,a: &mut Vec<Vec<f64>>, b: &mut Vec<f64>, e: f64){
     let mut v_x = vec![0 as f64; n];
+    let mut k:usize =0;
     loop {
+        k+=1;
         let mut delta: f64 = 0.0;
         for i in 1..=n {
             let mut s: f64 = 0.0;
@@ -137,15 +140,20 @@ fn calculation(n: usize,a: &mut Vec<Vec<f64>>, b: &mut Vec<f64>, e: f64){
         if delta < e {
             println!("Your answer:");
             println!("{:?}", &v_x);
+            println!("Number of iterations:");
+            println!("{}",k);
+            println!("Error:");
+            println!("{}",delta);
             break;
         }
+
     }
 }
 
 fn main() {
 
-    let mut a:Vec<Vec<f64>> = vec![];
     let mut n:usize = 0;
+    let mut a:Vec<Vec<f64>> = vec![];
     let mut b:Vec<f64> = vec![];
     let mut e:f64 = 0.0;
     match input(&mut n,&mut a,&mut b,&mut e) { Ok(()) => (),Err(e) => panic!("{}",e.to_string()) };

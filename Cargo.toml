@@ -9,4 +9,9 @@ edition = "2021"
 name = "lab1"
 path = "src/lab1.rs"
 
+[[bin]]
+name = "lab2"
+path = "src/lab2.rs"
+
 [dependencies]
+plotters = "0.3.1"
