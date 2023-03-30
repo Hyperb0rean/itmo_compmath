@@ -13,5 +13,9 @@ path = "src/lab1.rs"
 name = "lab2"
 path = "src/lab2.rs"
 
+[[bin]]
+name = "lab3"
+path = "src/lab3.rs"
+
 [dependencies]
 plotters = "0.3.1"
