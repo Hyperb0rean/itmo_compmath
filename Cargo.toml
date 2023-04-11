@@ -7,15 +7,19 @@ edition = "2021"
 
 [[bin]]
 name = "lab1"
-path = "src/lab1.rs"
+path = "src/linear-equasions-solver.rs"
 
 [[bin]]
 name = "lab2"
-path = "src/lab2.rs"
+path = "src/non-linear-equasions-solver.rs"
 
 [[bin]]
 name = "lab3"
-path = "src/lab3.rs"
+path = "src/inegration.rs"
+
+[[bin]]
+name = "lab4"
+path = "src/aproximation.rs"
 
 [dependencies]
 plotters = "0.3.1"
