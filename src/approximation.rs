@@ -1,9 +1,19 @@
+use std::cmp::min;
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, Error};
 use std::io::ErrorKind::Other;
+use plotters::backend::BitMapBackend;
+use plotters::chart::ChartBuilder;
+use plotters::coord::Shift;
+use plotters::drawing::{DrawingArea, IntoDrawingArea};
+use plotters::prelude::{IntoFont, WHITE};
+use crate::FUNCTION::POLYNOMIAL;
 
 const ACCURACY: f64 =0.001;
+const WIDTH: u32 = 1920;
+const HEIGHT: u32 = 1080;
+
 
 enum FUNCTION{
     POLYNOMIAL(u16),
@@ -77,12 +87,10 @@ fn input(n: &mut usize,x: &mut Vec<f64>,y: &mut Vec<f64>) -> io::Result<()>{
 }
 
 fn approximation_calculation(f: FUNCTION, n: usize, x : &Vec<f64>, y : &Vec<f64>) -> Vec<f64>{
-    let mut b:Vec<f64> = vec![];
-    let mut matrix:Vec<Vec<f64>> = vec![vec![]];
     match f {
         FUNCTION::POLYNOMIAL(m)=>{
-            b = vec![0 as f64; (m+1) as usize];
-            matrix = vec![vec![0 as f64; (m+1) as usize]; (m+1) as usize];
+            let mut b:Vec<f64> = vec![0 as f64; (m+1) as usize];
+            let mut matrix:Vec<Vec<f64>> = vec![vec![0 as f64; (m+1) as usize]; (m+1) as usize];
 
             for i in 0..=m {
                 for j in 0..n{
@@ -91,31 +99,22 @@ fn approximation_calculation(f: FUNCTION, n: usize, x : &Vec<f64>, y : &Vec<f64>
             }
             for i in 0..=m {
                 for j in 0..=m{
-                    let mut  sum:f64 = 0.0;
-                    for k in 0..n{
-                        sum += x[k].powi((i+j as u16) as i32);
-                    }
-                    matrix[i as usize][j as usize] = sum;
+                    matrix[i as usize][j as usize] = x.iter().map(|v| v.powi((i + j) as i32)).sum();
                 }
             }
-            println!("Your matrix:");
-            for k in &matrix {
-                println!("{:?}", &k);
-            }
-
             calculation((m+1) as usize, &mut matrix, &mut b, ACCURACY)
         }
         FUNCTION::EXPONENTIAL => {
-            let mut a = vec![0 as f64; 2];
+            let mut a = approximation_calculation(POLYNOMIAL(1),n,x,&((*y).iter().map(|v| v.ln()).collect()));
+            a[0] = a[0].exp();
             a
         }
         FUNCTION::LOGARITHMIC => {
-            let mut a = vec![0 as f64; 2];
-            a
+            approximation_calculation(POLYNOMIAL(1),n,&((*x).iter().map(|v| v.ln()).collect()),y)
         }
         FUNCTION::POWER =>{
-            let mut a = vec![0 as f64; 2];
-            a
+            approximation_calculation(POLYNOMIAL(1),n,
+                                              &((*x).iter().map(|v| v.ln()).collect()),&((*y).iter().map(|v| v.ln()).collect()))
         }
     }
 
@@ -124,7 +123,6 @@ fn approximation_calculation(f: FUNCTION, n: usize, x : &Vec<f64>, y : &Vec<f64>
 fn calculation(n: usize,a: &mut Vec<Vec<f64>>, b: &mut Vec<f64>, e: f64) -> Vec<f64>{
     let mut v_x = vec![0 as f64; n];
     loop {
-        k+=1;
         let mut delta: f64 = 0.0;
         for i in 1..=n {
             let mut s: f64 = 0.0;
@@ -141,12 +139,36 @@ fn calculation(n: usize,a: &mut Vec<Vec<f64>>, b: &mut Vec<f64>, e: f64) -> Vec<
             }
             v_x[i - 1] = x;
         }
-        if delta < e {
-            break;
-        }
-
+        if delta < e { break; }
     }
     v_x
+}
+
+fn draw_series(root:&DrawingArea<BitMapBackend,Shift>,f:FUNCTION, x:&Vec<f64>) -> Result<(), Box<dyn std::error::Error>>{
+
+
+    Ok(())
+}
+
+fn draw_chart(root:&DrawingArea<BitMapBackend,Shift>, x:&Vec<f64>,y:&Vec<f64>) -> Result<(), Box<dyn std::error::Error>>{
+
+    let min_x = x.iter().fold(f64::INFINITY, |a, &b| a.min(b));
+    let max_x = x.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
+    let min_y = y.iter().fold(f64::INFINITY, |a, &b| a.min(b));
+    let max_y = y.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
+
+    let delta = (min_x + min_y)/100.0;
+
+    root.fill(&WHITE)?;
+    let mut chart = ChartBuilder::on(&root)
+        .caption("My awesome graph in Rust", ("sans-serif", 50).into_font())
+        .margin(5)
+        .x_label_area_size(30)
+        .y_label_area_size(30)
+        .build_cartesian_2d((min_x-delta)..(max_x, min_y..max_y);
+
+
+    Ok(())
 }
 
 fn main() {
@@ -157,5 +179,9 @@ fn main() {
     match input(&mut n, &mut x,&mut y) { Ok(()) => (),Err(e) => panic!("{}",e.to_string()) };
 
 
-    println!("{:?}", approximation_calculation(FUNCTION::POLYNOMIAL(2), n, &mut x, &mut y));
+    println!("{:?}", approximation_calculation(FUNCTION::POLYNOMIAL(1), n, &mut x, &mut y));
+
+    let root = BitMapBackend::new("out/approximation.png", (WIDTH, HEIGHT)).into_drawing_area();
+    draw_chart(&root,&x,&y);
+
 }
