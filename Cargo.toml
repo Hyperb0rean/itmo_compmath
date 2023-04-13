@@ -19,7 +19,7 @@ path = "src/inegration.rs"
 
 [[bin]]
 name = "lab4"
-path = "src/aproximation.rs"
+path = "src/approximation.rs"
 
 [dependencies]
 plotters = "0.3.1"
