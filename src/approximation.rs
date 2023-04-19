@@ -1,14 +1,17 @@
+use std::arch::x86_64::_mm_extract_ps;
 use std::cmp::min;
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, Error};
 use std::io::ErrorKind::Other;
 use plotters::backend::BitMapBackend;
-use plotters::chart::ChartBuilder;
+use plotters::chart::{ChartBuilder, ChartContext};
 use plotters::coord::Shift;
+use plotters::coord::types::RangedCoordf64;
 use plotters::drawing::{DrawingArea, IntoDrawingArea};
-use plotters::prelude::{IntoFont, WHITE};
-use crate::FUNCTION::POLYNOMIAL;
+use plotters::element::PathElement;
+use plotters::prelude::{BLACK, Cartesian2d, Color, IntoFont, LineSeries, RED, WHITE};
+use crate::FUNCTION::{EXPONENTIAL, POLYNOMIAL};
 
 const ACCURACY: f64 =0.001;
 const WIDTH: u32 = 1920;
@@ -97,6 +100,7 @@ fn approximation_calculation(f: FUNCTION, n: usize, x : &Vec<f64>, y : &Vec<f64>
                     b[i as usize]+= ((*x)[j as usize].powi(i as i32))*(*y)[j as usize];
                 }
             }
+
             for i in 0..=m {
                 for j in 0..=m{
                     matrix[i as usize][j as usize] = x.iter().map(|v| v.powi((i + j) as i32)).sum();
@@ -144,31 +148,87 @@ fn calculation(n: usize,a: &mut Vec<Vec<f64>>, b: &mut Vec<f64>, e: f64) -> Vec<
     v_x
 }
 
-fn draw_series(root:&DrawingArea<BitMapBackend,Shift>,f:FUNCTION, x:&Vec<f64>) -> Result<(), Box<dyn std::error::Error>>{
+fn draw_series(root:&DrawingArea<BitMapBackend,Shift>, mut chart:ChartContext<BitMapBackend,Cartesian2d<RangedCoordf64,RangedCoordf64>>, f:FUNCTION, a:&Vec<f64>, x:&Vec<f64>, y:&Vec<f64>) -> Result<(), Box<dyn std::error::Error>>{
 
+    let min_x = x.iter().fold(f64::INFINITY, |a, &b| a.min(b));
+    let max_x = x.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
+
+    match f {
+        FUNCTION::POLYNOMIAL(m) => {
+            chart
+                .draw_series(LineSeries::new(
+                    ((min_x.round() as i32)..=(max_x.round() as i32)).map(|x| x as f64 ).map(|x| (x,{
+                        let mut sum :f64 = 0.0;
+                        for i in 1..=m {
+                            sum+= a[(i-1) as usize]*(x.powi(i as i32));
+                        }
+                        sum
+                    })),
+                    &RED,
+                ))?
+                .label("polynomial")
+                .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
+        }
+        FUNCTION::EXPONENTIAL => {
+            chart
+                .draw_series(LineSeries::new(
+                    ((min_x.round() as i32)..=(max_x.round() as i32)).map(|x| x as f64 ).map(|x| (x,a[0]*(((x as f64)*a[1] as f64).exp()))),
+                    &RED,
+                ))?
+                .label("e^x")
+                .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
+        }
+        FUNCTION::LOGARITHMIC => {
+            chart
+                .draw_series(LineSeries::new(
+                    ((min_x.round() as i32)..=(max_x.round() as i32)).map(|x| x as f64 ).map(|x| (x,a[0]*((x).ln()) + a[1])),
+                    &RED,
+                ))?
+                .label("lnx")
+                .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
+        }
+        FUNCTION::POWER => {
+            chart
+                .draw_series(LineSeries::new(
+                    ((min_x.round() as i32)..=(max_x.round() as i32)).map(|x| x as f64 ).map(|x| (x,a[0]*((x).powf(a[1])))),
+                    &RED,
+                ))?
+                .label("x^a")
+                .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
+        }
+    }
+
+    chart
+        .configure_series_labels()
+        .background_style(&WHITE.mix(0.8))
+        .border_style(&BLACK)
+        .draw()?;
+
+    (*root).present()?;
 
     Ok(())
 }
 
-fn draw_chart(root:&DrawingArea<BitMapBackend,Shift>, x:&Vec<f64>,y:&Vec<f64>) -> Result<(), Box<dyn std::error::Error>>{
-
+fn draw_chart<'a>(root:&'a DrawingArea<BitMapBackend<'a>,Shift>, x:&'a Vec<f64>,y:&'a Vec<f64>)
+    -> Result<ChartContext<'a, BitMapBackend<'a>,Cartesian2d<RangedCoordf64,RangedCoordf64>>, Box<dyn std::error::Error>>{
     let min_x = x.iter().fold(f64::INFINITY, |a, &b| a.min(b));
     let max_x = x.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
     let min_y = y.iter().fold(f64::INFINITY, |a, &b| a.min(b));
     let max_y = y.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
 
-    let delta = (min_x + min_y)/100.0;
+    let delta = ((max_x-min_x).abs() + (max_y-min_y).abs())/1000.0;
 
-    root.fill(&WHITE)?;
-    let mut chart = ChartBuilder::on(&root)
+    (*root).fill(&WHITE)?;
+    let mut chart = ChartBuilder::on(root)
         .caption("My awesome graph in Rust", ("sans-serif", 50).into_font())
         .margin(5)
         .x_label_area_size(30)
         .y_label_area_size(30)
-        .build_cartesian_2d((min_x-delta)..(max_x, min_y..max_y);
+        .build_cartesian_2d((min_x-delta)..(max_x+delta), (min_y-delta)..(max_y+delta));
 
+    chart?.configure_mesh().draw()?;
 
-    Ok(())
+    Ok(chart.unwrap())
 }
 
 fn main() {
@@ -178,10 +238,9 @@ fn main() {
 
     match input(&mut n, &mut x,&mut y) { Ok(()) => (),Err(e) => panic!("{}",e.to_string()) };
 
-
     println!("{:?}", approximation_calculation(FUNCTION::POLYNOMIAL(1), n, &mut x, &mut y));
-
     let root = BitMapBackend::new("out/approximation.png", (WIDTH, HEIGHT)).into_drawing_area();
-    draw_chart(&root,&x,&y);
+    draw_series(&root, draw_chart(&root, &x, &y).unwrap(),
+                EXPONENTIAL, &approximation_calculation(EXPONENTIAL, n, &mut x, &mut y), &x, &y).expect("Ooops! Something went wrong");
 
 }
