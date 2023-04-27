@@ -11,7 +11,9 @@ use plotters::coord::types::RangedCoordf64;
 use plotters::drawing::{DrawingArea, DrawingAreaErrorKind, IntoDrawingArea};
 use plotters::element::PathElement;
 use plotters::prelude::{BLACK, Cartesian2d, Color, IntoFont, LineSeries, RED, WHITE};
-use crate::FUNCTION::{EXPONENTIAL, POLYNOMIAL};
+use plotters::style::{BLUE, GREEN};
+use plotters::style::full_palette::PURPLE;
+use crate::FUNCTION::{EXPONENTIAL, LOGARITHMIC, POLYNOMIAL, POWER};
 
 const ACCURACY: f64 =0.001;
 const WIDTH: u32 = 1920;
@@ -148,79 +150,56 @@ fn calculation(n: usize,a: &mut Vec<Vec<f64>>, b: &mut Vec<f64>, e: f64) -> Vec<
     v_x
 }
 
-// fn draw_series(root:&DrawingArea<BitMapBackend,Shift>, chart: &mut Result<ChartContext<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>, DrawingAreaErrorKind<plotters_bitmap::BitMapBackendError>>, f:FUNCTION, a:&Vec<f64>, x:&Vec<f64>, y:&Vec<f64>) -> Result<(), Box<dyn std::error::Error>>{
-//
-//     let min_x = x.iter().fold(f64::INFINITY, |a, &b| a.min(b));
-//     let max_x = x.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
-//
-//     match f {
-//         FUNCTION::POLYNOMIAL(m) => {
-//             chart.unwrap()
-//                 .draw_series(LineSeries::new(
-//                     ((min_x.round() as i32)..=(max_x.round() as i32)).map(|x| x as f64 ).map(|x| (x,{
-//                         let mut sum :f64 = 0.0;
-//                         for i in 1..=m {
-//                             sum+= a[(i-1) as usize]*(x.powi(i as i32));
-//                         }
-//                         sum
-//                     })),
-//                     &RED,
-//                 ))?
-//                 .label("polynomial")
-//                 .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
-//         }
-//         FUNCTION::EXPONENTIAL => {
-//             (*chart)?
-//                 .draw_series(LineSeries::new(
-//                     ((min_x.round() as i32)..=(max_x.round() as i32)).map(|x| x as f64 ).map(|x| (x,a[0]*(((x as f64)*a[1] as f64).exp()))),
-//                     &RED,
-//                 ))?
-//                 .label("e^x")
-//                 .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
-//         }
-//         FUNCTION::LOGARITHMIC => {
-//             (*chart)?
-//                 .draw_series(LineSeries::new(
-//                     ((min_x.round() as i32)..=(max_x.round() as i32)).map(|x| x as f64 ).map(|x| (x,a[0]*((x).ln()) + a[1])),
-//                     &RED,
-//                 ))?
-//                 .label("lnx")
-//                 .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
-//         }
-//         FUNCTION::POWER => {
-//             (*chart)?
-//                 .draw_series(LineSeries::new(
-//                     ((min_x.round() as i32)..=(max_x.round() as i32)).map(|x| x as f64 ).map(|x| (x,a[0]*((x).powf(a[1])))),
-//                     &RED,
-//                 ))?
-//                 .label("x^a")
-//                 .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
-//         }
-//     }
-//     Ok(())
-// }
-
-// fn draw_chart<'a>(root:&'a DrawingArea<BitMapBackend<'a>,Shift>, x:&'a Vec<f64>,y:&'a Vec<f64>)
-//     -> Result<ChartContext<'a, BitMapBackend<'a>,Cartesian2d<RangedCoordf64,RangedCoordf64>>, Box<dyn std::error::Error>>{
-//     let min_x = x.iter().fold(f64::INFINITY, |a, &b| a.min(b));
-//     let max_x = x.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
-//     let min_y = y.iter().fold(f64::INFINITY, |a, &b| a.min(b));
-//     let max_y = y.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
-//
-//     let delta = ((max_x-min_x).abs() + (max_y-min_y).abs())/1000.0;
-//
-//     (*root).fill(&WHITE)?;
-//     let mut chart = ChartBuilder::on(root)
-//         .caption("My awesome graph in Rust", ("sans-serif", 50).into_font())
-//         .margin(5)
-//         .x_label_area_size(30)
-//         .y_label_area_size(30)
-//         .build_cartesian_2d((min_x-delta)..(max_x+delta), (min_y-delta)..(max_y+delta));
-//
-//     chart?.configure_mesh().draw()?;
-//
-//     Ok(chart.unwrap())
-// }
+fn draw_series(chart: &mut ChartContext<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>, f:FUNCTION, a:&Vec<f64>, min_x:f64, max_x:f64, delta_x:f64) -> Result<(), Box<dyn std::error::Error>>{
+    match f {
+        FUNCTION::POLYNOMIAL(m) => {
+            chart
+                .draw_series(LineSeries::new(
+                    (((100.0*min_x).round() as i32)..=((100.0*max_x).round() as i32)).map(|x| x as f64/100.0).map(|x| (x,{
+                        let mut sum :f64 = 0.0;
+                        for i in 0..=m {
+                            sum+= a[i as usize]*(x.powi(i as i32));
+                        }
+                        sum
+                    })),
+                    &RED,
+                ))?
+                .label(format!("polynomial {0}",m))
+                .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
+        }
+        FUNCTION::EXPONENTIAL => {
+            chart
+                .draw_series(LineSeries::new(
+                    (((100.0*min_x).round() as i32)..=((100.0*max_x).round() as i32)).map(|x| x as f64/100.0)
+                        .map(|x| (x,a[0]*(((x as f64)*a[1] as f64).exp()))),
+                    &BLUE,
+                ))?
+                .label("exponential")
+                .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
+        }
+        FUNCTION::LOGARITHMIC => {
+            chart
+                .draw_series(LineSeries::new(
+                    (((100.0*min_x).round() as i32)..=((100.0*max_x).round() as i32)).map(|x| x as f64/100.0)
+                        .map(|x| (x,a[0]*((x).ln()) + a[1])),
+                    &GREEN,
+                ))?
+                .label("logarithmic")
+                .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &GREEN));
+        }
+        FUNCTION::POWER => {
+            chart
+                .draw_series(LineSeries::new(
+                    (((100.0*min_x).round() as i32)..=((100.0*max_x).round() as i32)).map(|x| x as f64/100.0)
+                        .map(|x| (x,a[0]*((x).powf(a[1])))),
+                    &PURPLE,
+                ))?
+                .label("power")
+                .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &PURPLE));
+        }
+    }
+    Ok(())
+}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut n:usize = 0;
@@ -252,58 +231,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     chart.configure_mesh().draw()?;
 
-    let f : FUNCTION = EXPONENTIAL;
-
-    let a=approximation_calculation(f,n,&mut x, &mut y);
-
-    println!("Your approximation coefficients: {:?}",&a);
-    match f {
-        FUNCTION::POLYNOMIAL(m) => {
-            chart
-                .draw_series(LineSeries::new(
-                    (((100.0*min_x).round() as i32)..=((100.0*max_x).round() as i32)).map(|x| x as f64/100.0).map(|x| (x,{
-                        let mut sum :f64 = 0.0;
-                        for i in 0..=m {
-                            sum+= a[i as usize]*(x.powi(i as i32));
-                        }
-                        sum
-                    })),
-                    &RED,
-                ))?
-                .label("polynomial")
-                .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
-        }
-        FUNCTION::EXPONENTIAL => {
-            chart
-                .draw_series(LineSeries::new(
-                    (((100.0*min_x).round() as i32)..=((100.0*max_x).round() as i32)).map(|x| x as f64/100.0)
-                        .map(|x| (x,a[0]*(((x as f64)*a[1] as f64).exp()))),
-                    &RED,
-                ))?
-                .label("e^x")
-                .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
-        }
-        FUNCTION::LOGARITHMIC => {
-            chart
-                .draw_series(LineSeries::new(
-                    (((100.0*min_x).round() as i32)..=((100.0*max_x).round() as i32)).map(|x| x as f64/100.0)
-                        .map(|x| (x,a[0]*((x).ln()) + a[1])),
-                    &RED,
-                ))?
-                .label("lnx")
-                .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
-        }
-        FUNCTION::POWER => {
-            chart
-                .draw_series(LineSeries::new(
-                    (((100.0*min_x).round() as i32)..=((100.0*max_x).round() as i32)).map(|x| x as f64/100.0)
-                        .map(|x| (x,a[0]*((x).powf(a[1])))),
-                    &RED,
-                ))?
-                .label("x^a")
-                .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
-        }
-    }
+    draw_series(&mut chart, POLYNOMIAL(1), &approximation_calculation(POLYNOMIAL(1), n, &mut x, &mut y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
+    draw_series(&mut chart, POLYNOMIAL(2), &approximation_calculation(POLYNOMIAL(2), n, &mut x, &mut y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
+    draw_series(&mut chart, POLYNOMIAL(3), &approximation_calculation(POLYNOMIAL(3), n, &mut x, &mut y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
+    draw_series(&mut chart, EXPONENTIAL, &approximation_calculation(EXPONENTIAL, n, &mut x, &mut y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
+    draw_series(&mut chart, LOGARITHMIC, &approximation_calculation(LOGARITHMIC, n, &mut x, &mut y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
+    draw_series(&mut chart, POWER, &approximation_calculation(POWER, n, &mut x, &mut y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
 
     chart
         .configure_series_labels()
