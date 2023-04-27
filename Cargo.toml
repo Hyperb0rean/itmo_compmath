@@ -23,3 +23,4 @@ path = "src/approximation.rs"
 
 [dependencies]
 plotters = "0.3.1"
+plotters-bitmap = "0.3.2"

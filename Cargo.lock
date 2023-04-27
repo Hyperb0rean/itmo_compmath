@@ -395,6 +395,7 @@ name = "itmo_compmath"
 version = "0.1.0"
 dependencies = [
  "plotters",
+ "plotters-bitmap",
 ]
 
 [[package]]
