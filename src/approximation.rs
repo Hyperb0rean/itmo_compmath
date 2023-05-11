@@ -1,16 +1,19 @@
 use std::arch::x86_64::_mm_extract_ps;
-use std::cmp::min;
+use std::cmp::{min, Ordering};
+use std::f32::INFINITY;
+use std::f64::NAN;
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, Error};
 use std::io::ErrorKind::Other;
+use std::num::FpCategory::Nan;
 use plotters::backend::BitMapBackend;
 use plotters::chart::{ChartBuilder, ChartContext};
 use plotters::coord::Shift;
 use plotters::coord::types::RangedCoordf64;
 use plotters::drawing::{DrawingArea, DrawingAreaErrorKind, IntoDrawingArea};
 use plotters::element::PathElement;
-use plotters::prelude::{BLACK, Cartesian2d, Color, IntoFont, LineSeries, RED, WHITE};
+use plotters::prelude::{BLACK, Cartesian2d, Color, IntoFont, LineSeries, LogScalable, RED, WHITE};
 use plotters::style::{BLUE, GREEN};
 use plotters::style::full_palette::PURPLE;
 use crate::FUNCTION::{EXPONENTIAL, LOGARITHMIC, POLYNOMIAL, POWER};
@@ -167,7 +170,7 @@ fn find_best_function(n: usize,x : &Vec<f64>, y : &Vec<f64>) -> FUNCTION {
     deviations[5] =  (standart_deviation_calculation(POWER,n,
                                                      &differences_calculation(POWER, n,
                                                                               &approximation_calculation(POWER,n,&x,&y),&x, &y)),POWER);
-    deviations.sort_by(|a,b|  (a.0).partial_cmp(&(b.0)).unwrap());
+    deviations.sort_by(|a,b|  (a.0).partial_cmp(&(b.0)).unwrap_or(Ordering::Greater));
     deviations[0].1
 }
 
@@ -207,7 +210,7 @@ fn get_function(f: FUNCTION, a : &Vec<f64>,x:f64) ->  f64{
             a[0]*((x).ln()) + a[1]
         }
         FUNCTION::POWER =>{
-            a[0] + (x.powf(a[1].abs()))
+            a[0] * (x.powf(a[1]))
         }
     }
 }
@@ -238,7 +241,7 @@ fn print_function(f: FUNCTION, a :&Vec<f64>){
             a[0].to_string() + "lnx" +" + "+  &*a[1].to_string()
         }
         FUNCTION::POWER =>{
-            a[0].to_string() + "+ x^" + &*a[1].to_string()
+            a[0].to_string() + "x^" + &*a[1].to_string()
         }
     });
 }
@@ -327,7 +330,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     draw_series(&mut chart, LOGARITHMIC, &approximation_calculation(LOGARITHMIC, n, &mut x, &mut y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
     draw_series(&mut chart, POWER, &approximation_calculation(POWER, n, &mut x, &mut y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
 
-    println!("{:?}", &approximation_calculation(POWER, n, &mut x, &mut y));
+    println!("{:?}",&approximation_calculation(POWER,n,&x,&y));
     chart
         .configure_series_labels()
         .background_style(&WHITE.mix(0.8))
