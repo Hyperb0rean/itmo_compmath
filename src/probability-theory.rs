@@ -126,7 +126,7 @@ fn main()  -> Result<(), Box<dyn std::error::Error>> {
     println!("Extreme values: {}, {}", variation_series(&mut x)[0],variation_series(&mut x)[n-1]);
     println!("Scope: {}",variation_series(&mut x)[n-1] - variation_series(&mut x)[0]);
     println!("Mean: {}", x.iter().sum::<f64>()/(n as f64));
-    println!("Standard deviation: {}", standard_deviation(&mut x));
+    println!("Standard deviation: {}", standard_deviation(&mut x)*(n as f64)/(n as f64-1.));
     println!("Statistical series: {:?}", statistical_series(&mut variation_series(&mut x)));
 
     let  values: Vec<f64> = distribution_function(&mut statistical_series(&mut variation_series(&mut x))).0;
@@ -158,7 +158,10 @@ fn main()  -> Result<(), Box<dyn std::error::Error>> {
 
     root.present()?;
 
-    let statistical_series = statistical_series(&mut variation_series(&mut x));
+    let mut var = variation_series(&mut x);
+    let h = (var[n-1] - var[0])/(1. + (n as f64).log2());
+
+    let statistical_series = statistical_series(&mut histogram_series(&mut x, h));
 
     let root = BitMapBackend::new("out/poly.png", (640, 480)).into_drawing_area();
     root.fill(&WHITE)?;

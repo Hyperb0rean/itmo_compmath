@@ -25,6 +25,10 @@ path = "src/inegration.rs"
 name = "lab4"
 path = "src/approximation.rs"
 
+[[bin]]
+name = "lab6"
+path = "src/differential-equasions.rs"
+
 [dependencies]
 plotters = "0.3.1"
 plotters-bitmap = "0.3.2"

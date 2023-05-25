@@ -1,32 +1,68 @@
+use std::fs::File;
+use std::io;
+use std::io::{BufRead, Error};
+use std::io::ErrorKind::Other;
 use plotters::prelude::*;
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let root = BitMapBackend::new("out/0.png", (640, 480)).into_drawing_area();
-    root.fill(&WHITE)?;
-    let mut chart = ChartBuilder::on(&root)
-        .caption("y=x^2", ("sans-serif", 50).into_font())
-        .margin(5)
-        .x_label_area_size(30)
-        .y_label_area_size(30)
-        .build_cartesian_2d(-1f32..1f32, -0.1f32..1f32)?;
 
-    chart.configure_mesh().draw()?;
 
-    chart
-        .draw_series(LineSeries::new(
-            (-50..=50).map(|x| x as f32 / 50.0).map(|x| (x, x * x)),
-            &RED,
-        ))?
-        .label("y = x^2")
-        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
+enum TYPE{
+    EQ,
+    SYSTEM
+}
 
-    chart
-        .configure_series_labels()
-        .background_style(&WHITE.mix(0.8))
-        .border_style(&BLACK)
-        .draw()?;
+enum METHOD{
+    CHORD,
+    NEWTON
+}
 
-    root.present()?;
+fn input(n: &mut usize, a: &mut f64, b: &mut f64, e: &mut f64) -> io::Result<()>{
+    let stdin = io::stdin();
+    let mut handle = stdin.lock();
 
-    Ok(())
+    println!("Choose mode: (\"console\" for console input, \"file\" for file input)");
+
+    let mut buffer = String::new();
+    handle.read_line(&mut buffer)?;
+
+    if buffer.trim() == "console"{
+
+        println!("Enter matrix dimension:");
+        buffer = String::new();
+        handle.read_line(&mut buffer)?;
+        *n = buffer.trim().parse().expect("Input is not Number");
+        if *n<1 || *n>100 {panic!("Matrix dimension either impossible or too big");}
+
+
+        println!("Enter possible error:");
+        buffer = String::new();
+        handle.read_line(&mut buffer)?;
+        *e = buffer.trim().parse().expect("Input is not Number");
+        if *e <= 0.0 { panic!("Error should be bigger than 0");}
+        Ok(())
+    }
+    else if  buffer.trim() == "file"{
+        println!("Enter file path:");
+        buffer = String::new();
+        handle.read_line(&mut buffer)?;
+        let file = File::open(buffer.trim()).unwrap();
+        let mut lines  =io::BufReader::new(file).lines();
+        let mut line = lines.next().unwrap()?;
+        *n = line.trim().parse().expect("Input is not Number");
+        if *n<1 || *n>100 {panic!("Matrix dimension either impossible or too big");}
+
+        line = lines.next().unwrap()?;
+        *e = line.trim().parse().expect("Input is not Number");
+        if *e <= 0.0 { panic!("Error should be bigger than 0");}
+        Ok(())
+    }
+    else {
+        Err(Error::new(Other,"Unrecognisable input"))
+    }
+
+}
+
+
+fn main()  {
+
 }
 
