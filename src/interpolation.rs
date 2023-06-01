@@ -1,24 +1,17 @@
 use std::arch::x86_64::_mm_extract_ps;
-use std::cmp::{min, Ordering};
-use std::f32::INFINITY;
-use std::f64::NAN;
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, Error};
 use std::io::ErrorKind::Other;
-use std::num::FpCategory::Nan;
 use plotters::backend::BitMapBackend;
 use plotters::chart::{ChartBuilder, ChartContext};
-use plotters::coord::Shift;
 use plotters::coord::types::RangedCoordf64;
-use plotters::drawing::{DrawingArea, DrawingAreaErrorKind, IntoDrawingArea};
+use plotters::drawing::{ IntoDrawingArea};
 use plotters::element::PathElement;
-use plotters::prelude::{BLACK, Cartesian2d, Color, IntoFont, LineSeries, LogScalable, RED, WHITE};
+use plotters::prelude::{BLACK, Cartesian2d, Color, IntoFont, LineSeries, RED, WHITE};
 use plotters::style::{BLUE, GREEN};
-use plotters::style::full_palette::PURPLE;
 use crate::METHOD::{GAUSS, LAGRANGE, NEWTON};
 
-const ACCURACY: f64 =0.1;
 const WIDTH: u32 = 1920;
 const HEIGHT: u32 = 1080;
 
@@ -29,11 +22,11 @@ enum METHOD{
     GAUSS
 }
 
-fn input(n: &mut usize,x: &mut Vec<f64>,y: &mut Vec<f64>) -> io::Result<()>{
+fn input(n: &mut usize,val: &mut f64,x: &mut Vec<f64>,y: &mut Vec<f64>) -> io::Result<()>{
     let stdin = io::stdin();
     let mut handle = stdin.lock();
 
-    println!("Choose mode: (\"console\" for console input, \"file\" for file input)");
+    println!("Choose mode: (\"console\" for console input, \"file\" for file input, \"manual\" for manual function input)");
 
     let mut buffer = String::new();
     handle.read_line(&mut buffer)?;
@@ -44,8 +37,12 @@ fn input(n: &mut usize,x: &mut Vec<f64>,y: &mut Vec<f64>) -> io::Result<()>{
         buffer = String::new();
         handle.read_line(&mut buffer)?;
         *n = buffer.trim().parse().expect("Input is not Number");
-        if *n<1 || *n>12 {panic!("Number either impossible or too big");}
+        if *n<1 || *n>30 {panic!("Number either impossible or too big");}
 
+        println!("Enter point:");
+        buffer = String::new();
+        handle.read_line(&mut buffer)?;
+        *val = buffer.trim().parse().expect("Input is not Number");
 
         *x = vec![0 as f64; *n];
         println!("Enter vector of X values");
@@ -73,6 +70,7 @@ fn input(n: &mut usize,x: &mut Vec<f64>,y: &mut Vec<f64>) -> io::Result<()>{
         *n = line.trim().parse().expect("Input is not Number");
         if *n<1 || *n>12 {panic!("Number either impossible or too big");}
 
+        *val = line.trim().parse().expect("Input is not Number");
 
         *x = vec![0 as f64; *n];
         line = lines.next().unwrap()?;
@@ -85,6 +83,57 @@ fn input(n: &mut usize,x: &mut Vec<f64>,y: &mut Vec<f64>) -> io::Result<()>{
         if (*y).len() > *n { panic!("Vector is more than number") }
 
 
+        Ok(())
+    }
+    else if buffer.trim() == "manual"
+    {
+
+
+
+        println!("Enter number of points:");
+        buffer = String::new();
+        handle.read_line(&mut buffer)?;
+        *n = buffer.trim().parse().expect("Input is not Number");
+        if *n<1 || *n>30 {panic!("Number either impossible or too big");}
+
+        println!("Enter point:");
+        buffer = String::new();
+        handle.read_line(&mut buffer)?;
+        *val = buffer.trim().parse().expect("Input is not Number");
+
+        println!("Enter left boundary of interval:");
+        buffer = String::new();
+        handle.read_line(&mut buffer)?;
+        let a: f64 = buffer.trim().parse().expect("Input is not Number");
+
+        println!("Enter right boundary of interval:");
+        buffer = String::new();
+        handle.read_line(&mut buffer)?;
+        let b: f64 = buffer.trim().parse().expect("Input is not Number");
+        if b<a {panic!("RIGHT boundary is bigger then LEFT!!");}
+
+        *x = vec![0.0; *n];
+        *y = vec![0.0; *n];
+
+        for i in 0..*n {
+            (*x)[i] = a + (i as f64)*((b-a)/(*n) as f64);
+        }
+
+        println!("Choose function:\n
+        1) sinx\n
+        2) e^x");
+        let mut buffer = String::new();
+        handle.read_line(&mut buffer)?;
+        let chosen_function = buffer.trim().parse().expect("Input is not Number");
+        match chosen_function {
+            1 => for i in 0..*n {
+                y[i] = x[i].sin();
+            },
+            2 => for i in 0..*n {
+                y[i] = x[i].exp();
+            },
+            _ => panic!("Choose one of the following functions")
+        };
         Ok(())
     }
     else {
@@ -126,15 +175,21 @@ fn newton<'a>( n: usize, x : &'a Vec<f64>, y : &'a Vec<f64>) -> impl Fn(f64)->f6
 }
 
 fn gauss<'a>( n: usize, x : &'a Vec<f64>, y : &'a Vec<f64>) -> impl Fn(f64)->f64 + 'a{
-    move |v| {let mut sum =y[0];
-        for i in 1..n {
-            sum+=diff(i,0,x,y)*{let mut product = 1.0;
-                for j in 0..i {
-                    product*=v-x[j];
-                };
-                product}
-        };
-        sum}
+    let h: f64 = x[1] - x[0];
+    let x0 = x[n/2];
+        move |v| {let t  = (v-x0)/h;
+            let mut sum = y[n/2];
+            for i in 0..n {
+                sum+=diff(i,(n-i)/2,x,y)*{
+                    let mut product = t;
+                    let mut delta = 0.0;
+                    for j in 0..i {
+                        product*=(t-delta*if j%2==0 {1.0} else{-1.0})/(if j!= 0 {j as f64} else{1.0}) ;
+                        delta+=(j%2) as f64;
+                    };
+                    product}
+            };
+            sum}
 }
 
 
@@ -157,11 +212,12 @@ fn draw_series<'a>(chart: &mut ChartContext<BitMapBackend, Cartesian2d<RangedCoo
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut n:usize = 0;
+    let mut val:f64 = 0.0;
     let mut x:Vec<f64> = vec![];
     let mut y:Vec<f64> = vec![];
 
 
-    match input(&mut n, &mut x,&mut y) { Ok(()) => (),Err(e) => panic!("{}",e.to_string()) };
+    match input(&mut n, &mut val, &mut x,&mut y) { Ok(()) => (),Err(e) => panic!("{}",e.to_string()) };
 
 
     let root = BitMapBackend::new("out/interpolation.png", (WIDTH, HEIGHT)).into_drawing_area();
@@ -188,7 +244,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     draw_series(&mut chart, n, LAGRANGE,lagrange(n,&x,&y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
     draw_series(&mut chart, n, NEWTON,newton(n,&x,&y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
-    draw_series(&mut chart, n, GAUSS,gauss(n,&x,&y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
+    //draw_series(&mut chart, n, GAUSS,gauss(n,&x,&y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
+
+    println!("Largrange: {} \n", lagrange(n,&x,&y)(val) );
+    println!("Newton: {} \n", newton(n,&x,&y)(val) );
+    //println!("Gauss: {} \n", gauss(n,&x,&y)(val) );
 
 
     chart
