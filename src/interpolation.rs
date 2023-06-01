@@ -96,10 +96,6 @@ fn input(n: &mut usize,val: &mut f64,x: &mut Vec<f64>,y: &mut Vec<f64>) -> io::R
         *n = buffer.trim().parse().expect("Input is not Number");
         if *n<1 || *n>30 {panic!("Number either impossible or too big");}
 
-        println!("Enter point:");
-        buffer = String::new();
-        handle.read_line(&mut buffer)?;
-        *val = buffer.trim().parse().expect("Input is not Number");
 
         println!("Enter left boundary of interval:");
         buffer = String::new();
@@ -111,6 +107,14 @@ fn input(n: &mut usize,val: &mut f64,x: &mut Vec<f64>,y: &mut Vec<f64>) -> io::R
         handle.read_line(&mut buffer)?;
         let b: f64 = buffer.trim().parse().expect("Input is not Number");
         if b<a {panic!("RIGHT boundary is bigger then LEFT!!");}
+
+
+        println!("Enter point:");
+        buffer = String::new();
+        handle.read_line(&mut buffer)?;
+        *val = buffer.trim().parse().expect("Input is not Number");
+        if *val>b || *val < a {panic!("Enter point between two boundaries !!");}
+
 
         *x = vec![0.0; *n];
         *y = vec![0.0; *n];
@@ -179,12 +183,12 @@ fn gauss<'a>( n: usize, x : &'a Vec<f64>, y : &'a Vec<f64>) -> impl Fn(f64)->f64
     let x0 = x[n/2];
         move |v| {let t  = (v-x0)/h;
             let mut sum = y[n/2];
-            for i in 0..n {
+            for i in 1..n {
                 sum+=diff(i,(n-i)/2,x,y)*{
                     let mut product = t;
                     let mut delta = 0.0;
-                    for j in 0..i {
-                        product*=(t-delta*if j%2==0 {1.0} else{-1.0})/(if j!= 0 {j as f64} else{1.0}) ;
+                    for j in 1..i {
+                        product*=(t-delta*if j%2==0 {1.0} else{-1.0})/(j as f64) ;
                         delta+=(j%2) as f64;
                     };
                     product}
@@ -204,7 +208,11 @@ fn draw_series<'a>(chart: &mut ChartContext<BitMapBackend, Cartesian2d<RangedCoo
                         GAUSS => &GREEN
                     },
                 ))?
-                .label(format!("polynomial {0}",m))
+                .label(match method {
+                    LAGRANGE => "Lagrange",
+                    NEWTON => "Newton",
+                    GAUSS => "Gauss"
+                })
                 .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
 
     Ok(())
@@ -244,11 +252,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     draw_series(&mut chart, n, LAGRANGE,lagrange(n,&x,&y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
     draw_series(&mut chart, n, NEWTON,newton(n,&x,&y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
-    //draw_series(&mut chart, n, GAUSS,gauss(n,&x,&y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
+    draw_series(&mut chart, n, GAUSS,gauss(n,&x,&y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
 
     println!("Largrange: {} \n", lagrange(n,&x,&y)(val) );
     println!("Newton: {} \n", newton(n,&x,&y)(val) );
-    //println!("Gauss: {} \n", gauss(n,&x,&y)(val) );
+    println!("Gauss: {} \n", gauss(n,&x,&y)(val) );
 
 
     chart
