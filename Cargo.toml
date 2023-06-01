@@ -26,6 +26,10 @@ name = "lab4"
 path = "src/approximation.rs"
 
 [[bin]]
+name = "lab5"
+path = "src/interpolation.rs"
+
+[[bin]]
 name = "lab6"
 path = "src/differential-equasions.rs"
 
