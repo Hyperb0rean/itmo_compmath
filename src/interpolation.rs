@@ -10,16 +10,16 @@ use plotters::drawing::{ IntoDrawingArea};
 use plotters::element::PathElement;
 use plotters::prelude::{BLACK, Cartesian2d, Color, IntoFont, LineSeries, RED, WHITE};
 use plotters::style::{BLUE, GREEN};
-use crate::METHOD::{GAUSS, LAGRANGE, NEWTON};
+use crate::Method::{Gauss, Lagrange, Newton};
 
 const WIDTH: u32 = 1920;
 const HEIGHT: u32 = 1080;
 
 #[derive(Clone,Copy)]
-enum METHOD{
-    LAGRANGE,
-    NEWTON,
-    GAUSS
+enum Method {
+    Lagrange,
+    Newton,
+    Gauss
 }
 
 fn input(n: &mut usize,val: &mut f64,x: &mut Vec<f64>,y: &mut Vec<f64>) -> io::Result<()>{
@@ -198,20 +198,20 @@ fn gauss<'a>( n: usize, x : &'a Vec<f64>, y : &'a Vec<f64>) -> impl Fn(f64)->f64
 
 
 
-fn draw_series<'a>(chart: &mut ChartContext<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>, m:usize,method:METHOD, fun: impl Fn(f64) -> f64 + 'a, min_x:f64, max_x:f64, delta_x:f64) -> Result<(), Box<dyn std::error::Error>>{
+fn draw_series<'a>(chart: &mut ChartContext<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>, m:usize, method: Method, fun: impl Fn(f64) -> f64 + 'a, min_x:f64, max_x:f64, delta_x:f64) -> Result<(), Box<dyn std::error::Error>>{
             chart
                 .draw_series(LineSeries::new(
                     (((100.0*min_x).round() as i32)..=((100.0*max_x).round() as i32)).map(|x| x as f64/100.0).map(|x| (x,fun(x))),
                     match method {
-                        LAGRANGE => &RED,
-                        NEWTON => &BLUE,
-                        GAUSS => &GREEN
+                        Lagrange => &RED,
+                        Newton => &BLUE,
+                        Gauss => &GREEN
                     },
                 ))?
                 .label(match method {
-                    LAGRANGE => "Lagrange",
-                    NEWTON => "Newton",
-                    GAUSS => "Gauss"
+                    Lagrange => "Lagrange",
+                    Newton => "Newton",
+                    Gauss => "Gauss"
                 })
                 .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
 
@@ -250,9 +250,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     chart.configure_mesh().draw()?;
 
 
-    draw_series(&mut chart, n, LAGRANGE,lagrange(n,&x,&y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
-    draw_series(&mut chart, n, NEWTON,newton(n,&x,&y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
-    draw_series(&mut chart, n, GAUSS,gauss(n,&x,&y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
+    draw_series(&mut chart, n, Lagrange, lagrange(n, &x, &y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
+    draw_series(&mut chart, n, Newton, newton(n, &x, &y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
+    draw_series(&mut chart, n, Gauss, gauss(n, &x, &y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
 
     println!("Largrange: {} \n", lagrange(n,&x,&y)(val) );
     println!("Newton: {} \n", newton(n,&x,&y)(val) );

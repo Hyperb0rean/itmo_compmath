@@ -16,18 +16,18 @@ use plotters::element::PathElement;
 use plotters::prelude::{BLACK, Cartesian2d, Color, IntoFont, LineSeries, LogScalable, RED, WHITE};
 use plotters::style::{BLUE, GREEN};
 use plotters::style::full_palette::PURPLE;
-use crate::FUNCTION::{EXPONENTIAL, LOGARITHMIC, POLYNOMIAL, POWER};
+use crate::Function::{Exponential, Logarithmic, Polynomial, Power};
 
 const ACCURACY: f64 =0.001;
 const WIDTH: u32 = 1920;
 const HEIGHT: u32 = 1080;
 
 #[derive(Clone, Copy)]
-enum FUNCTION{
-    POLYNOMIAL(u16),
-    EXPONENTIAL,
-    LOGARITHMIC,
-    POWER
+enum Function {
+    Polynomial(u16),
+    Exponential,
+    Logarithmic,
+    Power
 }
 
 fn input(n: &mut usize,x: &mut Vec<f64>,y: &mut Vec<f64>) -> io::Result<()>{
@@ -94,9 +94,9 @@ fn input(n: &mut usize,x: &mut Vec<f64>,y: &mut Vec<f64>) -> io::Result<()>{
 
 }
 
-fn approximation_calculation(f: FUNCTION, n: usize, x : &Vec<f64>, y : &Vec<f64>) -> Vec<f64>{
+fn approximation_calculation(f: Function, n: usize, x : &Vec<f64>, y : &Vec<f64>) -> Vec<f64>{
     match f {
-        FUNCTION::POLYNOMIAL(m)=>{
+        Function::Polynomial(m)=>{
             let mut b:Vec<f64> = vec![0 as f64; (m+1) as usize];
             let mut matrix:Vec<Vec<f64>> = vec![vec![0 as f64; (m+1) as usize]; (m+1) as usize];
 
@@ -113,17 +113,17 @@ fn approximation_calculation(f: FUNCTION, n: usize, x : &Vec<f64>, y : &Vec<f64>
             }
             linear_calculation((m+1) as usize, &mut matrix, &mut b, ACCURACY)
         }
-        FUNCTION::EXPONENTIAL => {
-            let mut a = approximation_calculation(POLYNOMIAL(1),n,x,&((*y).iter().map(|v| v.ln()).collect()));
+        Function::Exponential => {
+            let mut a = approximation_calculation(Polynomial(1), n, x, &((*y).iter().map(|v| v.ln()).collect()));
             a[0] = a[0].exp();
             a
         }
-        FUNCTION::LOGARITHMIC => {
-            approximation_calculation(POLYNOMIAL(1),n,&((*x).iter().map(|v| v.ln()).collect()),y)
+        Function::Logarithmic => {
+            approximation_calculation(Polynomial(1), n, &((*x).iter().map(|v| v.ln()).collect()), y)
         }
-        FUNCTION::POWER =>{
-            approximation_calculation(POLYNOMIAL(1),n,
-                                              &((*x).iter().map(|v| v.ln()).collect()),&((*y).iter().map(|v| v.ln()).collect()))
+        Function::Power =>{
+            approximation_calculation(Polynomial(1), n,
+                                      &((*x).iter().map(|v| v.ln()).collect()), &((*y).iter().map(|v| v.ln()).collect()))
         }
     }
 
@@ -154,27 +154,27 @@ fn linear_calculation(n: usize,a: &mut Vec<Vec<f64>>, b: &mut Vec<f64>, e: f64) 
 }
 
 
-fn find_best_function(n: usize,x : &Vec<f64>, y : &Vec<f64>) -> FUNCTION {
-    let mut deviations: Vec<(f64,FUNCTION)> = vec![(0.0,FUNCTION::POLYNOMIAL(1));6];
+fn find_best_function(n: usize,x : &Vec<f64>, y : &Vec<f64>) -> Function {
+    let mut deviations: Vec<(f64, Function)> = vec![(0.0, Function::Polynomial(1)); 6];
     for i in 1..=3 {
-        deviations[i-1] = (standart_deviation_calculation(POLYNOMIAL(i as u16),n,
-                                                      &differences_calculation(POLYNOMIAL(i as u16), n,
-                                                      &approximation_calculation(POLYNOMIAL(i as u16),n,&x,&y),&x, &y)), POLYNOMIAL(i as u16));
+        deviations[i-1] = (standart_deviation_calculation(Polynomial(i as u16), n,
+                                                          &differences_calculation(Polynomial(i as u16), n,
+                                                                                   &approximation_calculation(Polynomial(i as u16), n, &x, &y), &x, &y)), Polynomial(i as u16));
     }
-    deviations[3] =  (standart_deviation_calculation(EXPONENTIAL,n,
-                                                  &differences_calculation(EXPONENTIAL, n,
-                                                                           &approximation_calculation(EXPONENTIAL,n,&x,&y),&x, &y)),EXPONENTIAL);
-    deviations[4] =  (standart_deviation_calculation(LOGARITHMIC,n,
-                                                     &differences_calculation(LOGARITHMIC, n,
-                                                                              &approximation_calculation(LOGARITHMIC,n,&x,&y),&x, &y)),LOGARITHMIC);
-    deviations[5] =  (standart_deviation_calculation(POWER,n,
-                                                     &differences_calculation(POWER, n,
-                                                                              &approximation_calculation(POWER,n,&x,&y),&x, &y)),POWER);
+    deviations[3] =  (standart_deviation_calculation(Exponential, n,
+                                                     &differences_calculation(Exponential, n,
+                                                                              &approximation_calculation(Exponential, n, &x, &y), &x, &y)), Exponential);
+    deviations[4] =  (standart_deviation_calculation(Logarithmic, n,
+                                                     &differences_calculation(Logarithmic, n,
+                                                                              &approximation_calculation(Logarithmic, n, &x, &y), &x, &y)), Logarithmic);
+    deviations[5] =  (standart_deviation_calculation(Power, n,
+                                                     &differences_calculation(Power, n,
+                                                                              &approximation_calculation(Power, n, &x, &y), &x, &y)), Power);
     deviations.sort_by(|a,b|  (a.0).partial_cmp(&(b.0)).unwrap_or(Ordering::Greater));
     deviations[0].1
 }
 
-fn standart_deviation_calculation(f: FUNCTION, n: usize, e : &Vec<f64>) -> f64{
+fn standart_deviation_calculation(f: Function, n: usize, e : &Vec<f64>) -> f64{
     let mut standard_deviation: f64 = 0.0;
     for i in 0..n{
         standard_deviation+=(e[i]).powi(2);
@@ -184,7 +184,7 @@ fn standart_deviation_calculation(f: FUNCTION, n: usize, e : &Vec<f64>) -> f64{
     standard_deviation
 }
 
-fn differences_calculation(f: FUNCTION, n: usize, a : &Vec<f64>, x : &Vec<f64>, y : &Vec<f64>) -> Vec<f64>{
+fn differences_calculation(f: Function, n: usize, a : &Vec<f64>, x : &Vec<f64>, y : &Vec<f64>) -> Vec<f64>{
     let mut differences: Vec<f64> = vec![0.0;n];
     for i in 0..n{
         differences[i] = get_function(f,a,x[i]) - y[i];
@@ -192,9 +192,9 @@ fn differences_calculation(f: FUNCTION, n: usize, a : &Vec<f64>, x : &Vec<f64>, 
     differences
 }
 
-fn get_function(f: FUNCTION, a : &Vec<f64>,x:f64) ->  f64{
+fn get_function(f: Function, a : &Vec<f64>, x:f64) ->  f64{
     match f {
-        FUNCTION::POLYNOMIAL(m)=>{
+        Function::Polynomial(m)=>{
             {
                 let mut sum :f64 = 0.0;
                 for i in 0..=m {
@@ -203,22 +203,22 @@ fn get_function(f: FUNCTION, a : &Vec<f64>,x:f64) ->  f64{
                 sum
             }
         }
-        FUNCTION::EXPONENTIAL => {
+        Function::Exponential => {
             a[0]*(((x as f64)*a[1] as f64).exp())
         }
-        FUNCTION::LOGARITHMIC => {
+        Function::Logarithmic => {
             a[0]*((x).ln()) + a[1]
         }
-        FUNCTION::POWER =>{
+        Function::Power =>{
             a[0] * (x.powf(a[1]))
         }
     }
 }
 
 
-fn print_function(f: FUNCTION, a :&Vec<f64>){
+fn print_function(f: Function, a :&Vec<f64>){
     println!("{}",match f {
-        FUNCTION::POLYNOMIAL(m)=>{
+        Function::Polynomial(m)=>{
             {
                 let mut string : String = Default::default();
                 for i in 0..=m {
@@ -234,55 +234,55 @@ fn print_function(f: FUNCTION, a :&Vec<f64>){
                 string
             }
         }
-        FUNCTION::EXPONENTIAL => {
+        Function::Exponential => {
             a[0].to_string() + "e^" + &*a[1].to_string() + "x"
         }
-        FUNCTION::LOGARITHMIC => {
+        Function::Logarithmic => {
             a[0].to_string() + "lnx" +" + "+  &*a[1].to_string()
         }
-        FUNCTION::POWER =>{
+        Function::Power =>{
             a[0].to_string() + "x^" + &*a[1].to_string()
         }
     });
 }
 
-fn draw_series(chart: &mut ChartContext<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>, f:FUNCTION, a:&Vec<f64>, min_x:f64, max_x:f64, delta_x:f64) -> Result<(), Box<dyn std::error::Error>>{
+fn draw_series(chart: &mut ChartContext<BitMapBackend, Cartesian2d<RangedCoordf64, RangedCoordf64>>, f: Function, a:&Vec<f64>, min_x:f64, max_x:f64, delta_x:f64) -> Result<(), Box<dyn std::error::Error>>{
     match f {
-        FUNCTION::POLYNOMIAL(m) => {
+        Function::Polynomial(m) => {
             chart
                 .draw_series(LineSeries::new(
-                    (((100.0*min_x).round() as i32)..=((100.0*max_x).round() as i32)).map(|x| x as f64/100.0).map(|x| (x,get_function(POLYNOMIAL(m),a,x))),
+                    (((100.0*min_x).round() as i32)..=((100.0*max_x).round() as i32)).map(|x| x as f64/100.0).map(|x| (x,get_function(Polynomial(m), a, x))),
                     &RED,
                 ))?
                 .label(format!("polynomial {0}",m))
                 .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
         }
 
-        FUNCTION::EXPONENTIAL => {
+        Function::Exponential => {
             chart
                 .draw_series(LineSeries::new(
                     (((100.0*min_x).round() as i32)..=((100.0*max_x).round() as i32)).map(|x| x as f64/100.0)
-                        .map(|x| (x,get_function(EXPONENTIAL,a,x))),
+                        .map(|x| (x,get_function(Exponential, a, x))),
                     &BLUE,
                 ))?
                 .label("exponential")
                 .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
         }
-        FUNCTION::LOGARITHMIC => {
+        Function::Logarithmic => {
             chart
                 .draw_series(LineSeries::new(
                     (((100.0*min_x).round() as i32)..=((100.0*max_x).round() as i32)).map(|x| x as f64/100.0)
-                        .map(|x| (x,get_function(LOGARITHMIC,a,x))),
+                        .map(|x| (x,get_function(Logarithmic, a, x))),
                     &GREEN,
                 ))?
                 .label("logarithmic")
                 .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &GREEN));
         }
-        FUNCTION::POWER => {
+        Function::Power => {
             chart
                 .draw_series(LineSeries::new(
                     (((100.0*min_x).round() as i32)..=((100.0*max_x).round() as i32)).map(|x| x as f64/100.0)
-                        .map(|x| (x,get_function(POWER,a,x))),
+                        .map(|x| (x,get_function(Power, a, x))),
                     &PURPLE,
                 ))?
                 .label("power")
@@ -323,14 +323,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     chart.configure_mesh().draw()?;
 
 
-    draw_series(&mut chart, POLYNOMIAL(1), &approximation_calculation(POLYNOMIAL(1), n, &mut x, &mut y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
-    draw_series(&mut chart, POLYNOMIAL(2), &approximation_calculation(POLYNOMIAL(2), n, &mut x, &mut y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
-    draw_series(&mut chart, POLYNOMIAL(3), &approximation_calculation(POLYNOMIAL(3), n, &mut x, &mut y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
-    draw_series(&mut chart, EXPONENTIAL, &approximation_calculation(EXPONENTIAL, n, &mut x, &mut y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
-    draw_series(&mut chart, LOGARITHMIC, &approximation_calculation(LOGARITHMIC, n, &mut x, &mut y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
-    draw_series(&mut chart, POWER, &approximation_calculation(POWER, n, &mut x, &mut y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
+    draw_series(&mut chart, Polynomial(1), &approximation_calculation(Polynomial(1), n, &mut x, &mut y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
+    draw_series(&mut chart, Polynomial(2), &approximation_calculation(Polynomial(2), n, &mut x, &mut y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
+    draw_series(&mut chart, Polynomial(3), &approximation_calculation(Polynomial(3), n, &mut x, &mut y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
+    draw_series(&mut chart, Exponential, &approximation_calculation(Exponential, n, &mut x, &mut y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
+    draw_series(&mut chart, Logarithmic, &approximation_calculation(Logarithmic, n, &mut x, &mut y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
+    draw_series(&mut chart, Power, &approximation_calculation(Power, n, &mut x, &mut y), min_x, max_x, delta_x).expect("Drawing go wrong!!!");
 
-    println!("{:?}",&approximation_calculation(POWER,n,&x,&y));
+    println!("{:?}",&approximation_calculation(Power, n, &x, &y));
     chart
         .configure_series_labels()
         .background_style(&WHITE.mix(0.8))

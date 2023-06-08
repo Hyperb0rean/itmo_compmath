@@ -2,7 +2,7 @@ use std::cmp::max;
 use std::ffi::c_double;
 use std::io;
 use std::io::BufRead;
-use crate::METHOD::{Euler, Miln, ModEuler};
+use crate::Method::{Euler, Miln, ModEuler};
 
 
 fn ex1(x: f64, y: f64) -> f64 { y + (1.0 + x) * y.powi(2) }
@@ -13,13 +13,13 @@ fn ex3(x: f64, y: f64) -> f64 { 2.0 * x }
 
 
 #[derive(Clone, Copy)]
-enum METHOD {
+enum Method {
     Euler,
     ModEuler,
     Miln,
 }
 
-fn input(y: &mut f64, e: &mut f64, a: &mut f64, b: &mut f64, f: &mut fn(f64, f64) -> f64) -> io::Result<METHOD> {
+fn input(y: &mut f64, e: &mut f64, a: &mut f64, b: &mut f64, f: &mut fn(f64, f64) -> f64) -> io::Result<Method> {
     let stdin = io::stdin();
     let mut handle = stdin.lock();
 
@@ -69,7 +69,7 @@ fn input(y: &mut f64, e: &mut f64, a: &mut f64, b: &mut f64, f: &mut fn(f64, f64
     buffer = String::new();
     handle.read_line(&mut buffer)?;
     let chosen_function = buffer.trim().parse().expect("Input is not Number");
-    let method: METHOD = match chosen_function {
+    let method: Method = match chosen_function {
         1 => Euler,
         2 => ModEuler,
         3 => Miln,
