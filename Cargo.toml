@@ -5,6 +5,9 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+build-std = ["thiserror_impl"]
+
+
 [[bin]]
 name = "prob"
 path = "src/probability-theory.rs"
@@ -34,5 +37,6 @@ name = "lab6"
 path = "src/differential-equasions.rs"
 
 [dependencies]
-plotters = "0.3.1"
-plotters-bitmap = "0.3.2"
+plotters = "0.3.3"
+plotters-bitmap = "0.3.3"
+

@@ -5,7 +5,7 @@ use std::io::ErrorKind::Other;
 use plotters::coord::types::RangedCoordf64;
 use plotters::prelude::*;
 use crate::Func::{Exponent, Linear, Polynomial, Sinus};
-use crate::Method::{EqChord, EqIter, EqNewton, SysNewton};
+use crate::Method::{EqChord, EqIter, EqNewton, SysIter};
 use crate::SystemFunc::{Circle, Polynomials};
 
 
@@ -21,6 +21,14 @@ fn dpolynom(x:f64) -> f64 {6.0*x.powi(2) - 18.0*x.powi(1) -7.0}
 fn dsinus(x:f64) -> f64 {x.cos()}
 fn dlinear(x:f64) -> f64 {2.0}
 fn dexponent(x:f64) -> f64 {x.exp()}
+
+//Polynomials
+fn poly_f1(x:f64,y:f64) -> f64 {2.0*x.powi(2) - y}
+fn poly_f2(x:f64,y:f64) -> f64 {x*y-4.0}
+
+//Circle
+fn circ_f1(x:f64,y:f64) -> f64 {x.powi(2)+ y.powi(2) -4.0}
+fn circ_f2(x:f64,y:f64) -> f64 {y -3.0*x.powi(2)}
 
 
 #[derive(Clone,Copy)]
@@ -43,7 +51,7 @@ enum Method
     EqChord(Func),
     EqNewton(Func),
     EqIter(Func),
-    SysNewton(SystemFunc)
+    SysIter(SystemFunc)
 }
 
 fn chord(mut a:f64, mut b:f64, e:f64, func: Func) -> Result<f64,String>{
@@ -68,7 +76,7 @@ fn newton(mut a:f64, mut b:f64, e:f64, func: Func) -> Result<f64,String>{
     let df: fn(f64) ->f64 = match func { Polynomial => dpolynom, Sinus => dsinus, Linear=> dlinear,Exponent=> dexponent };
     if f(a)*f(b) <= 0.0 {
         let mut x_old =b;
-        while (x-x_old).abs() >=e && (f(x)).abs()>=e && ((f(x)/df(x))).abs() >= e {
+        while (x-x_old).abs() >=e && (f(x)).abs()>=e && (f(x)/df(x)).abs() >= e {
             x_old=x;
             x = x - f(x)/df(x);
         }
@@ -96,6 +104,40 @@ fn iter(mut a:f64, mut b:f64, e:f64, func: Func) -> Result<f64,String>{
     else {Err("No root in this interval".to_string())}
 }
 
+fn sys_iter(mut a:f64, mut b:f64, e:f64, sfunc: SystemFunc) -> Result<(f64,f64),String>{
+    let mut x =a;
+    let mut y =b;
+    let mut x_old = b;
+    let mut y_old = a;
+
+    match sfunc {
+        Polynomials => {
+            let phi1:fn(f64,f64) ->f64 = |x,y| x-poly_f1(x,y);
+            let phi2:fn(f64,f64) ->f64 = |x,y| y-poly_f2(x,y);
+
+            while (x - x_old).abs() >= e && (y - y_old).abs() >= e {
+                x_old = x;
+                y_old = y;
+                x = phi1(x_old,y_old);
+                y = phi2(x_old,y_old);
+            }
+        },
+        Circle => {
+            let phi1:fn(f64,f64) ->f64 = |x,y| x-circ_f1(x,y);
+            let phi2:fn(f64,f64) ->f64 = |x,y| y-circ_f2(x,y);
+
+            while (x - x_old).abs() >= e && (y - y_old).abs() >= e {
+                x_old = x;
+                y_old = y;
+                x = phi1(x_old,y_old);
+                y = phi2(x_old,y_old);
+            }
+        }
+    }
+
+    Ok((x,y))
+}
+
 fn input(e: &mut f64, a: &mut f64, b: &mut f64, method: &mut Method) -> io::Result<()> {
 
     let stdin = io::stdin();
@@ -113,12 +155,12 @@ fn input(e: &mut f64, a: &mut f64, b: &mut f64, method: &mut Method) -> io::Resu
     {
         4=>{
             println!("Choose function:\n
-            1) x^2 + y^2 = 4; y=x\n
-            2) 2x^2 = 8; xy = 4;\n");
+            1) x^2 + y^2 = 4; y=3x^2\n
+            2) 2x^2 = y; xy = 4;\n");
             buffer = String::new();
             handle.read_line(&mut buffer)?;
             let chosen_function = buffer.trim().parse().expect("Input is not Number");
-            *method = match chosen_function { 1=> SysNewton(Circle), 2=>SysNewton(Polynomials), _=>panic!("Oops") }
+            *method = match chosen_function { 1=> SysIter(Circle), 2=> SysIter(Polynomials), _=>panic!("Oops") }
         },
         1 | 2 | 3 =>{
             println!("Choose function:\n
@@ -207,19 +249,31 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
     println!("{}",match method {
         EqChord(func)=>{
             draw_series(&mut chart,match func { Polynomial => polynom, Sinus => sinus, Linear=> linear,Exponent=> exponent },min_x,max_x,delta_x).expect("Drawing go wrong!!!");
-            match chord(a,b,e,func) { Ok(v) => v,Err(e) => panic!("{}",e)}
+            match chord(a,b,e,func) { Ok(v) => v.to_string(),Err(e) => panic!("{}",e)}
         },
         EqNewton(func)=>{
             draw_series(&mut chart,match func { Polynomial => polynom, Sinus => sinus, Linear=> linear,Exponent=> exponent },min_x,max_x,delta_x).expect("Drawing go wrong!!!");
-            match newton(a,b,e,func) { Ok(v) => v,Err(e) => panic!("{}",e)}
+            match newton(a,b,e,func) { Ok(v) => v.to_string(),Err(e) => panic!("{}",e)}
         },
         EqIter(func)=>{
             draw_series(&mut chart,match func { Polynomial => polynom, Sinus => sinus, Linear=> linear,Exponent=> exponent },min_x,max_x,delta_x).expect("Drawing go wrong!!!");
-            match iter(a,b,e,func) { Ok(v) => v,Err(e) => panic!("{}",e)}
+            match iter(a,b,e,func) { Ok(v) => v.to_string(),Err(e) => panic!("{}",e)}
 
         },
-        SysNewton(sfunc)=>{
-            10.0
+        SysIter(sfunc)=>{
+            match sfunc {
+                Polynomials => {
+                    draw_series(&mut chart,|x| 2.0*x.powi(2),min_x,max_x,delta_x).expect("Drawing go wrong!!!");
+                    draw_series(&mut chart,|x| 4.0/x,0.0,max_x,delta_x).expect("Drawing go wrong!!!");
+                },
+                Circle => {
+                    draw_series(&mut chart,|x| (4.0 -x.powi(2)).sqrt(),-2.0,2.0,delta_x).expect("Drawing go wrong!!!");
+                    draw_series(&mut chart,|x| -(4.0 -x.powi(2)).sqrt(),-2.0,2.0,delta_x).expect("Drawing go wrong!!!");
+                    draw_series(&mut chart,|x| 3.0*x.powi(2),min_x,max_x,delta_x).expect("Drawing go wrong!!!");
+
+                }
+            }
+            match sys_iter(a,b,e,sfunc) { Ok((x,y)) => x.to_string() + " " + &*y.to_string(),Err(e) => panic!("{}", e)}
         }
     });
 

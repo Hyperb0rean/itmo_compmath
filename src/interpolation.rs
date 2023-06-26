@@ -1,4 +1,3 @@
-use std::arch::x86_64::_mm_extract_ps;
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, Error};
@@ -8,7 +7,7 @@ use plotters::chart::{ChartBuilder, ChartContext};
 use plotters::coord::types::RangedCoordf64;
 use plotters::drawing::{ IntoDrawingArea};
 use plotters::element::PathElement;
-use plotters::prelude::{BLACK, Cartesian2d, Color, IntoFont, LineSeries, RED, WHITE};
+use plotters::prelude::*;
 use plotters::style::{BLUE, GREEN};
 use crate::Method::{Gauss, Lagrange, Newton};
 
